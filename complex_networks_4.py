@@ -19,6 +19,7 @@ def modules(G: nx.Graph):
 
 def hierarchy_analysis(G: nx.Graph):
     # z2
+    # TODO(11jolek11): Is Floyd Warshall ok?
     distances = nx.floyd_warshall_numpy(G)
     linked = linkage(distances, 'single', metric='euclidean')
     print(distances)
@@ -29,6 +30,7 @@ def hierarchy_analysis(G: nx.Graph):
 
 def split_methods(G: nx.Graph):
     # z3
+    # FIXME(11jolek11): KMeans is not split method?
     distances = nx.floyd_warshall_numpy(G)
     kmeans = KMeans(n_clusters=2, random_state=3214)
     kmeans_labels = kmeans.fit_predict(distances)
