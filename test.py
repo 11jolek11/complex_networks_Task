@@ -29,24 +29,24 @@ def cliques(graph: nx.Graph) -> None:
     plt.show()
 
 
-def modules(graph: nx.Graph) -> None:
-    partition = community.best_partition(graph)
-    communities = defaultdict(list)
-    for node, id in partition.items():
-        communities[id].append(node)
-    pos = nx.kamada_kawai_layout(graph)
-    nx.draw(graph, pos, with_labels=True)
-    colors = cm.get_cmap('rainbow', len(communities.keys()))
+# def modules(graph: nx.Graph) -> None:
+#     partition = community.best_partition(graph)
+#     communities = defaultdict(list)
+#     for node, id in partition.items():
+#         communities[id].append(node)
+#     pos = nx.kamada_kawai_layout(graph)
+#     nx.draw(graph, pos, with_labels=True)
+#     colors = cm.get_cmap('rainbow', len(communities.keys()))
 
-    data = {"rozmiar": [], "moduł": []}
-    for i, x in enumerate(sorted(communities.values(), key=len, reverse=True)):
-        nx.draw_networkx_nodes(graph, pos, nodelist=x, node_color=colors(i), node_size=200)
-        data["rozmiar"].append(len(x))
-        data["moduł"].append(x)
+#     data = {"rozmiar": [], "moduł": []}
+#     for i, x in enumerate(sorted(communities.values(), key=len, reverse=True)):
+#         nx.draw_networkx_nodes(graph, pos, nodelist=x, node_color=colors(i), node_size=200)
+#         data["rozmiar"].append(len(x))
+#         data["moduł"].append(x)
 
-    df = pd.DataFrame(data)
-    print(df)
-    plt.show()
+#     df = pd.DataFrame(data)
+#     print(df)
+#     plt.show()
 
 
 def agglomerate(graph: nx.Graph, threshold=6) -> Dict:
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     graph = nx.from_pandas_edgelist(data, "link1", "link2")
 
     cliques(graph)
-    modules(graph)
+    # modules(graph)
     md_agg = agglomerate(graph)
     md_div = divisive(graph)
     print(md_agg)

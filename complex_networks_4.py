@@ -37,6 +37,7 @@ def agl_methods(G: nx.Graph):
     # Dendrogram
     plt.figure(figsize=(10, 7))
     dendrogram(linked, orientation='top')
+    # print(f"Agl: {modularity(G, linked)}")
     plt.show()
 
 # def div_methods(G: nx.Graph):
@@ -56,7 +57,8 @@ def divisive(graph: nx.Graph, threshold=3):
     adj_matrix = nx.to_numpy_array(graph)
     modularity_div = {}
 
-    divisive_clusters = linkage(adj_matrix.T, method='centroid')
+    meth = "complete"
+    divisive_clusters = linkage(adj_matrix.T, method=meth)
     divisive_labels = fcluster(divisive_clusters, t=threshold, criterion='distance')
 
     for node, cluster in zip(graph.nodes, divisive_labels):
@@ -67,13 +69,14 @@ def divisive(graph: nx.Graph, threshold=3):
     cmap = cm.get_cmap('hsv', max(divisive_labels))
 
     nx.draw(graph, pos, node_color=[cmap(i) for i in divisive_labels], with_labels=False, ax=ax1)
-    ax1.set_title(f"Analiza hierarchii skupień - metoda podziałowa {'centroid'}")
+    ax1.set_title(f"Analiza hierarchii skupień - metoda podziałowa {meth}")
 
     divisive_dendrogram = dendrogram(divisive_clusters, ax=ax2, no_labels=True)
-    ax2.set_title(f"Dendrogram - metoda podziałowa {'centroid'}")
+    ax2.set_title(f"Dendrogram - metoda podziałowa {meth}")
     plt.show()
 
-    modularity_div['centroid'] = modularity(graph, [{node for node, data in graph.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
+    modularity_div[meth] = modularity(graph, [{node for node, data in graph.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
+    print(modularity_div)
     return modularity_div
 
 # TODO(11jolek11): z3
