@@ -14,6 +14,7 @@ from scipy.sparse.linalg import eigsh
 def find_cliques(G: nx.Graph):
     # z1
     cliques = sorted(list(nx.find_cliques(G)), key=len, reverse=True)
+    print(cliques)
     pos = nx.kamada_kawai_layout(G)
     nx.draw(G, pos)
     colors = cm.get_cmap('hsv', len(cliques))
@@ -64,15 +65,15 @@ def divisive(graph: nx.Graph, threshold=3):
     for node, cluster in zip(graph.nodes, divisive_labels):
         graph.nodes[node]['div'] = cluster
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 12))
     pos = nx.kamada_kawai_layout(graph)
     cmap = cm.get_cmap('hsv', max(divisive_labels))
 
     nx.draw(graph, pos, node_color=[cmap(i) for i in divisive_labels], with_labels=False, ax=ax1)
-    ax1.set_title(f"Analiza hierarchii skupień - metoda podziałowa {meth}")
+    ax1.set_title(f"Metoda podziałowa {meth}")
 
     divisive_dendrogram = dendrogram(divisive_clusters, ax=ax2, no_labels=True)
-    ax2.set_title(f"Dendrogram - metoda podziałowa {meth}")
+    ax2.set_title(f"Dendrogram {meth}")
     plt.show()
 
     modularity_div[meth] = modularity(graph, [{node for node, data in graph.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
