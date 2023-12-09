@@ -12,16 +12,10 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 
 
-df = pd.read_csv('./data/spam_email_raw_text_for_NLP.csv')
-
-df.head()
-
-df.tail()
-
-df['CATEGORY'].value_counts()
-
 nltk.download('wordnet')
 nltk.download('stopwords')
+
+df = pd.read_csv('./data/spam_email_raw_text_for_NLP.csv')
 
 tokenizer = nltk.RegexpTokenizer(r"\w+")
 
@@ -37,8 +31,6 @@ def message_to_token_list(s):
 
   return useful_tokens
 
-# message_to_token_list(test_message)
-
 df = df.sample(frac=1, random_state=1)
 df = df.reset_index(drop=True)
 
@@ -47,8 +39,6 @@ train_df, test_df = df[:split_index], df[split_index:]
 
 train_df = train_df.reset_index(drop=True)
 test_df = test_df.reset_index(drop=True)
-
-train_df, test_df
 
 token_counter = {}
 
@@ -61,17 +51,11 @@ for message in train_df['MESSAGE']:
     else:
       token_counter[token] = 1
 
-len(token_counter)
-
-token_counter
-
 def keep_token(proccessed_token, threshold):
   if proccessed_token not in token_counter:
     return False
   else:
     return token_counter[proccessed_token] > threshold
-
-keep_token('random', 100)
 
 features = set()
 
@@ -79,15 +63,9 @@ for token in token_counter:
   if keep_token(token, 10000):
     features.add(token)
 
-features
-
 features = list(features)
-features
 
 token_to_index_mapping = {t:i for t, i in zip(features, range(len(features)))}
-token_to_index_mapping
-
-message_to_token_list('3d b <br> .com bad font font com randoms')
 
 # "Bag of Words" (counts vector)
 
@@ -110,12 +88,6 @@ def message_to_count_vector(message):
 
   return count_vector
 
-message_to_count_vector('3d b <br> .com bad font font com randoms')
-
-message_to_count_vector(train_df['MESSAGE'].iloc[3])
-
-train_df.iloc[3]
-
 def df_to_X_y(dff):
   y = dff['CATEGORY'].to_numpy().astype(int)
 
@@ -133,8 +105,6 @@ def df_to_X_y(dff):
 X_train, y_train = df_to_X_y(train_df)
 
 X_test, y_test = df_to_X_y(test_df)
-
-X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
 scaler = MinMaxScaler().fit(X_train)
 
