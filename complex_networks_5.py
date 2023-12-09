@@ -14,6 +14,10 @@ def download(dataset):
     nltk.download(dataset)
 
 def preprocess_text(text: str, language: str = 'english'):
+    download('punkt')
+    download('corpora')
+    download('stopwords')
+    download('wordnet')
     tokens = word_tokenize(text.lower())
 
     filtered_tokens = [token for token in tokens if token not in stopwords.words(language)]
@@ -28,7 +32,7 @@ def preprocess_text(text: str, language: str = 'english'):
 
     return processed_text
 
-def open_folder(folder_path: str, patterns = ["*.txt", "*.pdf", "*.docx"]):
+def open_folder(folder_path: str, patterns = ["*.txt", "*.pdf"]):
     path = Path(folder_path)
     # TODO(11jolek11): add reading from pdf's
     # file_paths = [_ for _ in path.glob(".txt")]
@@ -49,7 +53,21 @@ def open_folder(folder_path: str, patterns = ["*.txt", "*.pdf", "*.docx"]):
 
     return dict(zip(file_paths, file_contents))
 
+
+
+
+
+
+
+
+
 # http://etienned.github.io/posts/extract-text-from-word-docx-simply/
 # https://medium.com/@schahmatist/nlp-how-to-find-the-most-distinctive-words-comparing-two-different-types-of-texts-d234a6c44b30
 # https://www.nltk.org/book/ch01.html
 
+if __name__ == "__main__":
+    content = ""
+
+    with open("./data/sample_txt.txt") as file:
+        content = file.read()
+    print(preprocess_text(content))
