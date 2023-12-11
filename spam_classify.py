@@ -8,6 +8,7 @@ from sklearn.metrics import classification_report
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import MultinomialNB
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 
@@ -110,10 +111,19 @@ scaler = MinMaxScaler().fit(X_train)
 
 X_train, X_test = scaler.transform(X_train), scaler.transform(X_test)
 
+# Compare
+
+print("LogisticRegression report: ")
+
 lr = LogisticRegression().fit(X_train, y_train)
 print(classification_report(y_test, lr.predict(X_test)))
 
-# Compare logistic regression to random forest
+print("RandomForestClassifier report: ")
 
 rf = RandomForestClassifier().fit(X_train, y_train)
 print(classification_report(y_test, rf.predict(X_test)))
+
+print("MultinomialNB report: ")
+
+nvb = MultinomialNB(alpha=0.1).fit(X_train, y_train)
+print(classification_report(y_test, nvb.predict(X_test)))
