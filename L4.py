@@ -5,6 +5,8 @@ from networkx.algorithms import community
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from sklearn.cluster import KMeans, SpectralClustering
 from sklearn.metrics import normalized_mutual_info_score
+from networkx.algorithms.community import modularity
+
 
 # e = pd.read_csv('edges.csv')
 # h = pd.read_csv('hero-network.csv')

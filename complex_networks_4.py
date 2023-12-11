@@ -32,7 +32,7 @@ def agl_methods(G: nx.Graph):
     # z2
     # adj_matrix = nx.to_numpy_array(G)
     floyd = nx.floyd_warshall_numpy(G)
-    linked = linkage(floyd, method="ward")
+    linked = linkage(floyd, method="single")
     # print(adj_matrix)
     print(floyd)
     # Dendrogram
@@ -77,7 +77,7 @@ def divisive(graph: nx.Graph, threshold=3):
     plt.show()
 
     modularity_div[meth] = modularity(graph, [{node for node, data in graph.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
-    print(modularity_div)
+    print(f"Divisive: {modularity_div}")
     return modularity_div
 
 # TODO(11jolek11): z3
@@ -163,13 +163,20 @@ if __name__ == "__main__":
 
     TEMP = nx.from_pandas_edgelist(data, "link1", "link2")
 
+    average_clustering = nx.average_clustering(TEMP)
+    # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.cluster.average_clustering.html
+    # https://en.wikipedia.org/wiki/Clustering_coefficient
+    print(f"average_clustering: {average_clustering}")
+
     # cliques(TEMP)
 
-    find_cliques(TEMP)
-    modules(TEMP)
-    agl_methods(TEMP)
+    # find_cliques(TEMP)
+    # modules(TEMP)
+    # agl_methods(TEMP)
+
     # split_methods(TEMP)
-    compare(TEMP)
-    divisive(TEMP)
-    spectral(TEMP)
+
+    # compare(TEMP)
+    divisive(TEMP, threshold=0)
+    # spectral(TEMP)
     # compare_precision(TEMP)
