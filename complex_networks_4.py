@@ -32,7 +32,7 @@ def agl_methods(G: nx.Graph):
     # z2
     # adj_matrix = nx.to_numpy_array(G)
     floyd = nx.floyd_warshall_numpy(G)
-    linked = linkage(floyd, method="single")
+    linked = linkage(floyd, method="ward")
     # print(adj_matrix)
     print(floyd)
     # Dendrogram
@@ -170,13 +170,13 @@ if __name__ == "__main__":
 
     # cliques(TEMP)
 
-    # find_cliques(TEMP)
-    # modules(TEMP)
-    # agl_methods(TEMP)
+    find_cliques(TEMP)
+    modules(TEMP)
+    agl_methods(TEMP)
 
     # split_methods(TEMP)
 
-    # compare(TEMP)
+    compare(TEMP)
     divisive(TEMP, threshold=0)
-    # spectral(TEMP)
+    spectral(TEMP)
     # compare_precision(TEMP)
