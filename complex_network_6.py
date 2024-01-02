@@ -9,7 +9,6 @@ import random
 import ndlib.models.ModelConfig as mc
 import ndlib.models.epidemics as ep
 from ndlib.viz.mpl.DiffusionTrend import DiffusionTrend
-import csv
 
 
 
