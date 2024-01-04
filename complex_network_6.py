@@ -9,6 +9,7 @@ import random
 import ndlib.models.ModelConfig as mc
 import ndlib.models.epidemics as ep
 from ndlib.viz.mpl.DiffusionTrend import DiffusionTrend
+from statistics import mean
 
 
 
@@ -43,8 +44,8 @@ def attack(G: nx.Graph, max_iters=20, max_removal_prop=1.0):
         if i >= max_iters:
             break
 
-        if dcs[i] in list(nx.articulation_points(G_copy)):
-            continue
+        # if dcs[i] in list(nx.articulation_points(G_copy)):
+        #     continue
 
         # print(f"Iter {i}")
         
@@ -56,8 +57,13 @@ def attack(G: nx.Graph, max_iters=20, max_removal_prop=1.0):
         
 
         G_copy.remove_node(dcs[i])
+
+        comps = list((G_copy.subgraph(c) for c in nx.connected_components(G)))
+
+        diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
+
         # print(f"Number of cc after removal: {len(list(nx.connected_components(G_copy)))}")
-        diameter_hist.append(nx.diameter(G_copy))
+        # diameter_hist.append(nx.diameter(G_copy))
 
         current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
         removal_propor.append(current_removal_propor)
@@ -92,11 +98,15 @@ def fail(G: nx.Graph, max_iters = 20,  max_removal_prop=1.0):
         node_for_removal = dcs.pop(random.randrange(len(dcs)))
         print(f"node_for_removal {node_for_removal}")
 
-        if node_for_removal in list(nx.articulation_points(G_copy)):
-            continue
+        # if node_for_removal in list(nx.articulation_points(G_copy)):
+        #     continue
 
         G_copy.remove_node(node_for_removal)
-        diameter_hist.append(nx.diameter(G_copy))
+        # diameter_hist.append(nx.diameter(G_copy))
+
+        comps = list((G_copy.subgraph(c) for c in nx.connected_components(G)))
+
+        diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
 
         current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
         removal_propor.append(current_removal_propor)
@@ -183,11 +193,11 @@ if __name__ == "__main__":
         inplace=True)
     
     TEMP = nx.from_pandas_edgelist(data, "Source", "Target")
-    all_nodes_pagerank_to_csv(TEMP)
+    # all_nodes_pagerank_to_csv(TEMP)
     # degree_distribution(TEMP)
 
-    # attack(TEMP, max_removal_prop=0.2)
-    # fail(TEMP, max_removal_prop=0.2)
+    attack(TEMP, max_iters=20)
+    # fail(TEMP, max_iters=100)
 
     # epidemy(TEMP,
     #         {
