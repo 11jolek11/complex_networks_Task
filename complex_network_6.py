@@ -40,9 +40,9 @@ def attack(G: nx.Graph, max_iters=20, max_removal_prop=1.0):
 
     dcs = dcs.index.values.tolist()
 
-    for i in range(len(dcs)):
-        if i >= max_iters:
-            break
+    for i in range(len(dcs[:max_iters])):
+        # if i >= max_iters:
+        #     break
 
         # if dcs[i] in list(nx.articulation_points(G_copy)):
         #     continue
@@ -56,9 +56,17 @@ def attack(G: nx.Graph, max_iters=20, max_removal_prop=1.0):
         
         
 
+        # G_copy.remove_node(dcs[i])
         G_copy.remove_node(dcs[i])
 
+        # comps = list(filter(lambda sub_comp: True if sub_comp.number_of_nodes() > 1 else False, (G_copy.subgraph(c) for c in nx.connected_components(G))))
+
         comps = list((G_copy.subgraph(c) for c in nx.connected_components(G)))
+
+        te = "Size of cc: "
+        for comp in comps:
+            te += str(comp.number_of_nodes()) + " "
+        print(te)
 
         diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
 
@@ -73,6 +81,7 @@ def attack(G: nx.Graph, max_iters=20, max_removal_prop=1.0):
     plt.plot(removal_propor, diameter_hist)
     plt.savefig("attack_lol.jpg")
     # plt.show()
+    plt.clf()
 
 def fail(G: nx.Graph, max_iters = 20,  max_removal_prop=1.0):
     G_copy = copy(G)
@@ -93,6 +102,7 @@ def fail(G: nx.Graph, max_iters = 20,  max_removal_prop=1.0):
 
     # while (current_removal_propor >= max_removal_prop) or max_iters <= current_iter:
     while max_iters >= current_iter:
+        print(f"Fail iter: {current_iter}")
         current_iter += 1
 
         node_for_removal = dcs.pop(random.randrange(len(dcs)))
@@ -105,6 +115,13 @@ def fail(G: nx.Graph, max_iters = 20,  max_removal_prop=1.0):
         # diameter_hist.append(nx.diameter(G_copy))
 
         comps = list((G_copy.subgraph(c) for c in nx.connected_components(G)))
+        # comps = list(filter(lambda sub_comp: True if sub_comp.number_of_nodes() > 1 else False, (G_copy.subgraph(c) for c in nx.connected_components(G))))
+
+
+        te = "Size of cc: "
+        for comp in comps:
+            te += str(comp.number_of_nodes()) + " "
+        print(te)
 
         diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
 
@@ -117,6 +134,7 @@ def fail(G: nx.Graph, max_iters = 20,  max_removal_prop=1.0):
     plt.plot(removal_propor, diameter_hist)
     plt.savefig("fail_lol.jpg")
     # plt.show()
+    plt.clf()
 
 def epidemy(G: nx.Graph, model_params: dict, n: int):
     model  = ep.SEIRModel(G)
@@ -193,18 +211,18 @@ if __name__ == "__main__":
         inplace=True)
     
     TEMP = nx.from_pandas_edgelist(data, "Source", "Target")
-    # all_nodes_pagerank_to_csv(TEMP)
+    all_nodes_pagerank_to_csv(TEMP)
     # degree_distribution(TEMP)
 
-    attack(TEMP, max_iters=20)
-    # fail(TEMP, max_iters=100)
+    # attack(TEMP, max_iters=20)
+    # fail(TEMP, max_iters=20)
 
-    # epidemy(TEMP,
-    #         {
-    #             'beta': 0.01,
-    #             'lambda': 0.9,
-    #             'gamma': 0.005,
-    #             'alpha': 0.05,
-    #             "fraction_infected": 0.05
-    #         },
-    #         500)
+    epidemy(TEMP,
+            {
+                'beta': 0.01,
+                'lambda': 0.9,
+                'gamma': 0.005,
+                'alpha': 0.05,
+                "fraction_infected": 0.05
+            },
+            500)
