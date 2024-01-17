@@ -20,5 +20,7 @@ handle = DataSource(TEMP, [100, 50, 30], default_sample_size=20)
 
 @app.get("/")
 def index():
-    return {"data": handle.get_data()}
+    data = handle.get_data()
+
+    return {"data": data}
 #  uvicorn server:app --reload
