@@ -23,7 +23,7 @@ class DataSource:
             yield [self.graph.pop(random.randrange(len(self.graph))) for _ in range(sample_size)]
     
     def get_data(self):
-        return next(self._generator)
+        return next(self._generator, None)
 
 
 if __name__ == "__main__":
