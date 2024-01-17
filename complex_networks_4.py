@@ -11,6 +11,7 @@ from networkx.algorithms.community import modularity
 from scipy.sparse.linalg import eigsh
 
 
+
 def find_cliques(G: nx.Graph):
     # z1
     cliques = sorted(list(nx.find_cliques(G)), key=len, reverse=True)
@@ -164,8 +165,6 @@ if __name__ == "__main__":
     TEMP = nx.from_pandas_edgelist(data, "link1", "link2")
 
     average_clustering = nx.average_clustering(TEMP)
-    # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.cluster.average_clustering.html
-    # https://en.wikipedia.org/wiki/Clustering_coefficient
     print(f"average_clustering: {average_clustering}")
 
     # cliques(TEMP)
