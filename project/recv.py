@@ -1,10 +1,11 @@
+import random
+from copy import copy
+
 import requests
 import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import random
-from copy import copy
 import ndlib.models.ModelConfig as mc
 import ndlib.models.epidemics as ep
 from ndlib.viz.mpl.DiffusionTrend import DiffusionTrend
@@ -162,6 +163,13 @@ class GraphEngine():
         dendrogram(linked, orientation='top')
         plt.show()
 
+    def plot_graph(self):
+        plt.clf()
+        self._graph_storage
+        nx.draw(self._graph_storage)
+        plt.plot()
+        plt.show()
+
     def divisive(self, method: str, threshold=3, criterion: str = "distance"):
         adj_matrix = nx.to_numpy_array(self._graph_storage)
         modularity_div = {}
@@ -188,14 +196,18 @@ class GraphEngine():
         print(f"Divisive: {modularity_div}")
 
 if __name__ == "__main__":
+    import time
     ge = GraphEngine()
 
     for _ in range(10):
         resp = requests.get("http://127.0.0.1:8000/")
 
         if resp.status_code != 200:
-            raise Exception("ailed connection...")
-        ge.add_data(resp.json()["data"])
+            raise Exception("Failed connection...")
+        for _ in range(20):
+            ge.add_data(resp.json()["data"])
 
-        ge.degree_distribution()
+            ge.degree_distribution()
+            # ge.plot_graph()
+            time.sleep(1)
 
