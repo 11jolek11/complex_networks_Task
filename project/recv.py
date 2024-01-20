@@ -14,8 +14,18 @@ import seaborn as sns
 from networkx.algorithms.community import modularity
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from matplotlib import cm
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg,
+    NavigationToolbar2Tk
+)
 
 
+import tkinter as tk
+import tkinter.ttk as ttk
+
+
+matplotlib.use('TkAgg')
 
 class GraphEngine():
     def __init__(self) -> None:
@@ -53,13 +63,20 @@ class GraphEngine():
 
             current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
             removal_propor.append(current_removal_propor)
-        print(f"Diameter len {len(diameter_hist)}")
-        print(f"Diameter len {len(removal_propor)}")
 
-        plt.plot(removal_propor, diameter_hist)
-        plt.plot()
+        # create a figure
+        figure = Figure(figsize=(6, 4), dpi=100)
 
-        plt.clf()
+        # create axes
+        axes = figure.add_subplot()
+
+        # create the barchart
+        axes.plot(removal_propor, diameter_hist)
+        axes.set_title('Attack simulation')
+        axes.set_ylabel('Diameter')
+
+        return figure, None
+
 
     def fail(self, max_iters=20):
         G_copy = copy(self._graph_storage)
@@ -99,12 +116,18 @@ class GraphEngine():
             current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
             removal_propor.append(current_removal_propor)
 
-        print(f"Diameter len {len(diameter_hist)}")
-        print(f"Diameter len {len(removal_propor)}")
+        figure = Figure(figsize=(6, 4), dpi=100)
 
-        plt.plot(removal_propor, diameter_hist)
-        plt.show()
-        plt.clf()
+        # create axes
+        axes = figure.add_subplot()
+
+        # create the barchart
+        axes.plot(removal_propor, diameter_hist)
+        axes.set_title('Fail simulation')
+        axes.set_ylabel('Diameter')
+
+        return figure, None
+
 
     def epidemy(self, model_params: dict, n: int):
         model = ep.SEIRModel(self._graph_storage)
@@ -119,8 +142,13 @@ class GraphEngine():
 
         trends = model.build_trends(iterations)
         viz = DiffusionTrend(model, trends)
+        # TODO(11jolek11): Test!
+        print(type(viz))
+        print(issubclass(viz.__class__, Figure))
         viz.plot("diffusion")
         plt.show()
+
+        return None, None
 
     def degree_distribution(self):
         degree_sequence = sorted((d for _, d in self._graph_storage.degree()), reverse=True)
@@ -150,9 +178,7 @@ class GraphEngine():
         ax2.set_ylabel("# of Nodes")
 
         fig.tight_layout()
-        print("plot")
-        plt.plot()
-        plt.show()
+        return fig, None
 
     def agl_methods(self, method: str):
         floyd = nx.floyd_warshall_numpy(self._graph_storage)
@@ -163,18 +189,19 @@ class GraphEngine():
         dendrogram(linked, orientation='top')
         plt.show()
 
+        return None, {"floyd": floyd}
+
     def plot_graph(self):
-        plt.clf()
-        self._graph_storage
-        nx.draw(self._graph_storage)
+        self._graph_storage.draw()
         plt.plot()
         plt.show()
 
-    def divisive(self, method: str, threshold=3, criterion: str = "distance"):
+        return None, None
+
+    def divisive(self, threshold=3, meth: str = "complete", criterion: str = "distance"):
         adj_matrix = nx.to_numpy_array(self._graph_storage)
         modularity_div = {}
 
-        meth = "complete"
         divisive_clusters = linkage(adj_matrix.T, method=meth)
         divisive_labels = fcluster(divisive_clusters, t=threshold, criterion=criterion)
 
@@ -195,8 +222,45 @@ class GraphEngine():
         modularity_div[meth] = modularity(self._graph_storage, [{node for node, data in self._graph_storage.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
         print(f"Divisive: {modularity_div}")
 
+        return None, {"modularity": modularity_div}
+
+class Gui:
+    def __init__(self) -> None:
+        self.root = tk.Tk()
+        self.plot_area = None
+        self.user_area =  None
+        self.properties_area = None
+
+    # Create/update plot_area
+    def create_plot_and_properties_area(self, figure: Figure, data: dict):
+        frame = ttk.Frame(self.root)
+         # create FigureCanvasTkAgg object
+        figure_canvas = FigureCanvasTkAgg(figure, frame)
+
+        # create the toolbar
+        NavigationToolbar2Tk(figure_canvas, frame)
+
+        figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        subframe = ttk.Frame(frame)
+
+        for prop, value in data:
+            temp = ttk.Label(subframe, text=f"{prop}: {value}")
+            temp.pack()
+
+        subframe.pack()
+
+    def create_user_area(self):
+        pass
+
+    def build(self):
+        pass
+
+    def run(self):
+        self.root.mainloop()
+
+
 if __name__ == "__main__":
-    import time
     ge = GraphEngine()
 
     for _ in range(10):
@@ -204,10 +268,7 @@ if __name__ == "__main__":
 
         if resp.status_code != 200:
             raise Exception("Failed connection...")
-        for _ in range(20):
-            ge.add_data(resp.json()["data"])
+        ge.add_data(resp.json()["data"])
 
-            ge.degree_distribution()
-            # ge.plot_graph()
-            time.sleep(1)
+        ge.degree_distribution()
 
