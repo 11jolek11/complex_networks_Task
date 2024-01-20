@@ -1,5 +1,7 @@
+from os import stat
 import random
 from copy import copy
+from textwrap import fill
 
 import requests
 import networkx as nx
@@ -13,6 +15,7 @@ from statistics import mean
 import seaborn as sns
 from networkx.algorithms.community import modularity
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
+import matplotlib
 from matplotlib import cm
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (
@@ -27,9 +30,14 @@ import tkinter.ttk as ttk
 
 matplotlib.use('TkAgg')
 
+
 class GraphEngine():
     def __init__(self) -> None:
         self._graph_storage = nx.Graph()
+
+    @staticmethod
+    def __get_figure():
+        return Figure(figsize=(6, 4), dpi=100)
 
     def add_data(self, new_data):
         self._graph_storage.add_edges_from(new_data)
@@ -39,6 +47,7 @@ class GraphEngine():
         my_frame = pd.DataFrame({"Node": list(my_dict.keys()), "Rank": list(my_dict.values())})
         my_frame.index.name = "Index"
         sns.displot(my_frame, x="Rank", kde=True)
+        return None, None
 
     def attack(self, max_iters=20):
         G_copy = copy(self._graph_storage)
@@ -65,7 +74,7 @@ class GraphEngine():
             removal_propor.append(current_removal_propor)
 
         # create a figure
-        figure = Figure(figsize=(6, 4), dpi=100)
+        figure = self.__get_figure()
 
         # create axes
         axes = figure.add_subplot()
@@ -116,7 +125,7 @@ class GraphEngine():
             current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
             removal_propor.append(current_removal_propor)
 
-        figure = Figure(figsize=(6, 4), dpi=100)
+        figure = self.__get_figure()
 
         # create axes
         axes = figure.add_subplot()
@@ -153,7 +162,7 @@ class GraphEngine():
     def degree_distribution(self):
         degree_sequence = sorted((d for _, d in self._graph_storage.degree()), reverse=True)
 
-        fig = plt.figure("Degree of a random graph", figsize=(8, 8))
+        fig = plt.figure("Degree of a random graph", figsize=(6, 4))
         # Create a gridspec for adding subplots of different sizes
         axgrid = fig.add_gridspec(5, 4)
 
@@ -224,25 +233,25 @@ class GraphEngine():
 
         return None, {"modularity": modularity_div}
 
+
 class Gui:
     def __init__(self) -> None:
         self.root = tk.Tk()
-        self.plot_area = None
-        self.user_area =  None
-        self.properties_area = None
+        self.plot_area = ttk.Frame(self.root)
+        self.user_area = ttk.Frame(self.root)
+        self.figure_canvas = FigureCanvasTkAgg(None, self.plot_area)
 
     # Create/update plot_area
     def create_plot_and_properties_area(self, figure: Figure, data: dict):
-        frame = ttk.Frame(self.root)
-         # create FigureCanvasTkAgg object
-        figure_canvas = FigureCanvasTkAgg(figure, frame)
+        # create FigureCanvasTkAgg object
+        self.figure_canvas = FigureCanvasTkAgg(figure, self.plot_area)
 
         # create the toolbar
-        NavigationToolbar2Tk(figure_canvas, frame)
+        NavigationToolbar2Tk(self.figure_canvas, self.plot_area)
 
-        figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-        subframe = ttk.Frame(frame)
+        subframe = ttk.Frame(self.plot_area)
 
         for prop, value in data:
             temp = ttk.Label(subframe, text=f"{prop}: {value}")
@@ -250,11 +259,27 @@ class Gui:
 
         subframe.pack()
 
+    def update_plot_and_properties_area(self, figure: Figure, data: dict):
+        # create FigureCanvasTkAgg object
+        self.figure_canvas = FigureCanvasTkAgg(figure, self.plot_area)
+
+        # create the toolbar
+        NavigationToolbar2Tk(self.figure_canvas, self.plot_area)
+
+        self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        # TODO(11jolek11): How to make update to data?
+
+        self.plot_area.update()
+
     def create_user_area(self):
         pass
 
     def build(self):
-        pass
+        self.create_user_area()
+        self.create_plot_and_properties_area()
+        self.user_area.pack(side=tk.LEFT, fill=tk.Y, expand=1)
+        self.plot_area.pack(side=tk.LEFT)
 
     def run(self):
         self.root.mainloop()
