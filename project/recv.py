@@ -240,24 +240,21 @@ class Gui:
         self.plot_area = ttk.Frame(self.root)
         self.user_area = ttk.Frame(self.root)
         self.figure_canvas = FigureCanvasTkAgg(None, self.plot_area)
+        self.plot_subframe = ttk.Frame(self.plot_area)
+
 
     # Create/update plot_area
-    def create_plot_and_properties_area(self, figure: Figure, data: dict):
+    def create_plot_and_properties_area(self):
         # create FigureCanvasTkAgg object
-        self.figure_canvas = FigureCanvasTkAgg(figure, self.plot_area)
+        self.figure_canvas = FigureCanvasTkAgg(None, self.plot_area)
 
         # create the toolbar
         NavigationToolbar2Tk(self.figure_canvas, self.plot_area)
 
         self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-        subframe = ttk.Frame(self.plot_area)
 
-        for prop, value in data:
-            temp = ttk.Label(subframe, text=f"{prop}: {value}")
-            temp.pack()
-
-        subframe.pack()
+        self.plot_subframe.pack()
 
     def update_plot_and_properties_area(self, figure: Figure, data: dict):
         # create FigureCanvasTkAgg object
@@ -268,7 +265,12 @@ class Gui:
 
         self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-        # TODO(11jolek11): How to make update to data?
+        for child in self.plot_subframe.winfo_children():
+            child.destroy()
+
+        for prop, value in data:
+            temp = ttk.Label(self.plot_subframe, text=f"{prop}: {value}")
+            temp.pack()
 
         self.plot_area.update()
 
