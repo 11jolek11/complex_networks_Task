@@ -15,7 +15,7 @@ data.rename(
     inplace=True)
     
 TEMP = nx.from_pandas_edgelist(data, "Source", "Target")
-handle = DataSource(TEMP, [100, 50, 30], default_sample_size=20)
+handle = DataSource(TEMP, [1000, 50, 30], default_sample_size=20)
 
 
 @app.get("/")

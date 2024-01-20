@@ -1,7 +1,9 @@
+from collections.abc import Callable
 from os import stat
 import random
 from copy import copy
 from textwrap import fill
+from typing import Any
 
 import requests
 import networkx as nx
@@ -138,7 +140,13 @@ class GraphEngine():
         return figure, None
 
 
-    def epidemy(self, model_params: dict, n: int):
+    def epidemy(self, model_params: dict = {
+                'beta': 0.01,
+                'lambda': 0.9,
+                'gamma': 0.005,
+                'alpha': 0.05,
+                "fraction_infected": 0.05
+            }, n: int = 500):
         model = ep.SEIRModel(self._graph_storage)
 
         cfg = mc.Configuration()
@@ -155,7 +163,8 @@ class GraphEngine():
         print(type(viz))
         print(issubclass(viz.__class__, Figure))
         viz.plot("diffusion")
-        plt.show()
+        # plt.show()
+        plt.savefig("Result.jpg")
 
         return None, None
 
@@ -201,7 +210,7 @@ class GraphEngine():
         return None, {"floyd": floyd}
 
     def plot_graph(self):
-        self._graph_storage.draw()
+        nx.draw(self._graph_storage)
         plt.plot()
         plt.show()
 
@@ -235,67 +244,83 @@ class GraphEngine():
 
 
 class Gui:
-    def __init__(self) -> None:
+    def __init__(self, availabile_functions: dict[str, Callable], refresh_callback: Callable) -> None:
         self.root = tk.Tk()
-        self.plot_area = ttk.Frame(self.root)
         self.user_area = ttk.Frame(self.root)
-        self.figure_canvas = FigureCanvasTkAgg(None, self.plot_area)
-        self.plot_subframe = ttk.Frame(self.plot_area)
-
+        self.plot_subframe = ttk.Frame(self.root)
+        self.availabile_functions = availabile_functions
+        self.refresh_callback = refresh_callback
+        self.__inner_callback_store = []
 
     # Create/update plot_area
     def create_plot_and_properties_area(self):
-        # create FigureCanvasTkAgg object
-        self.figure_canvas = FigureCanvasTkAgg(None, self.plot_area)
-
-        # create the toolbar
-        NavigationToolbar2Tk(self.figure_canvas, self.plot_area)
-
-        self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-
         self.plot_subframe.pack()
 
-    def update_plot_and_properties_area(self, figure: Figure, data: dict):
-        # create FigureCanvasTkAgg object
-        self.figure_canvas = FigureCanvasTkAgg(figure, self.plot_area)
+    def update_plot_and_properties_area(self, func: Callable):
+        for_plot, data = func()
 
-        # create the toolbar
-        NavigationToolbar2Tk(self.figure_canvas, self.plot_area)
-
-        self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        if not data:
+            data = {}
 
         for child in self.plot_subframe.winfo_children():
             child.destroy()
 
-        for prop, value in data:
+        for prop, value in data.items():
             temp = ttk.Label(self.plot_subframe, text=f"{prop}: {value}")
             temp.pack()
-
-        self.plot_area.update()
+        if for_plot:
+            for ax in for_plot.axes:
+                ax.plot()
+                ax.show()
 
     def create_user_area(self):
-        pass
+        refresh_button = tk.Button(self.user_area, text="REFRESH", command=self.refresh_callback)
+        refresh_button.pack()
+
+        for item, callback in self.availabile_functions.items():
+
+            # TODO(11jolek11): How to handle return data?
+
+            temp = tk.Button(self.user_area, text=item, command=lambda: self.update_plot_and_properties_area(callback))
+            temp.pack()
 
     def build(self):
         self.create_user_area()
         self.create_plot_and_properties_area()
         self.user_area.pack(side=tk.LEFT, fill=tk.Y, expand=1)
-        self.plot_area.pack(side=tk.LEFT)
 
     def run(self):
         self.root.mainloop()
 
 
+# if __name__ == "__main__":
+    # ge = GraphEngine()
+    #
+    # for _ in range(10):
+    #     resp = requests.get("http://127.0.0.1:8000/")
+    #
+    #     if resp.status_code != 200:
+    #         raise Exception("Failed connection...")
+    #     ge.add_data(resp.json()["data"])
+    #
+    #     ge.degree_distribution()
 if __name__ == "__main__":
-    ge = GraphEngine()
+    engine = GraphEngine()
 
-    for _ in range(10):
+    def refresh():
         resp = requests.get("http://127.0.0.1:8000/")
 
         if resp.status_code != 200:
             raise Exception("Failed connection...")
-        ge.add_data(resp.json()["data"])
+        engine.add_data(resp.json()["data"])
 
-        ge.degree_distribution()
+    gui = Gui(
+            {
+                "Plot": engine.plot_graph,
+                "Epidemy": engine.epidemy
+            },
+            refresh
+            )
+    gui.build()
+    gui.run()
 
