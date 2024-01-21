@@ -239,7 +239,6 @@ def epidemy(client, model_params: dict = {
     easygui.msgbox(f"Saved in {path}", title="Epidemy simulation complete")
 
 def attack(client, max_iters=20):
-    # TODO(11jolek11): Sns sactterplot draw on gui screen not to a file and takes "screenshot" of gui when savefig is invoked
     G_copy = copy(client.graph)
     G_size = G_copy.number_of_nodes()
 
@@ -266,18 +265,19 @@ def attack(client, max_iters=20):
 
         current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
         removal_propor.append(current_removal_propor)
+    
+    fig, ax = plt.subplots()
 
     # create the barchart
     sns.scatterplot(x=removal_propor, y=diameter_hist)
     # plt.set_title('Attack simulation')
     # plt.set_ylabel('Diameter')
     path = "attack.jpg"
-    plt.savefig(path)
+    fig.savefig(path)
     easygui.msgbox(f"Saved in {path}", title="Attack simulation complete")
 
 
 def fail(client, max_iters=20):
-    # TODO(11jolek11): Sns sactterplot draw on gui screen not to a file and takes "screenshot" of gui when savefig is invoked
     G_copy = copy(client.graph)
     G_size = G_copy.number_of_nodes()
 
@@ -318,12 +318,14 @@ def fail(client, max_iters=20):
 
         current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
         removal_propor.append(current_removal_propor)
+    
+    fig, ax = plt.subplots()
 
     sns.scatterplot(x=removal_propor, y=diameter_hist)
     # plt.set_title('Fail simulation')
     # plt.set_ylabel('Diameter')
     path = "fail.jpg"
-    plt.savefig(path)
+    fig.savefig(path)
     easygui.msgbox(f"Saved in {path}", title="Fail simulation complete")
 
 def degree_distribution(client):
@@ -390,7 +392,6 @@ def divisive(client, threshold=3, meth: str = "complete", criterion: str = "dist
 
 def agl_methods(client, method: str = "ward"):
     G_copy = copy(client.graph)
-    # FIXME(11jolek11): floyd warshall returns inf values in array
     floyd = nx.floyd_warshall_numpy(G_copy)
     floyd[floyd == np.inf] = 999
 
