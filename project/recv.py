@@ -9,6 +9,7 @@ import pandas as pd
 from copy import copy
 from statistics import mean
 import random
+import sys
 
 import ndlib.models.ModelConfig as mc
 import ndlib.models.epidemics as ep
@@ -187,6 +188,7 @@ class ClientApp:
         nx.draw(self.graph, with_labels=True, font_size=8, node_size=50, ax=self.ax1)
         self.ani = animation.FuncAnimation(self.fig, self.animate, interval=interval)
         plt.show()
+        sys.exit(0)
 
 def define_text_boxes(app):
     interval_box_ax = plt.axes([0.62, 0.30, 0.2, 0.05])
@@ -237,6 +239,7 @@ def epidemy(client, model_params: dict = {
     easygui.msgbox(f"Saved in {path}", title="Epidemy simulation complete")
 
 def attack(client, max_iters=20):
+    # TODO(11jolek11): Sns sactterplot draw on gui screen not to a file and takes "screenshot" of gui when savefig is invoked
     G_copy = copy(client.graph)
     G_size = G_copy.number_of_nodes()
 
@@ -255,21 +258,26 @@ def attack(client, max_iters=20):
         G_copy.remove_node(dcs[i])
 
         comps = list((G_copy.subgraph(c) for c in nx.connected_components(G_copy)))
-        diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
+        temp = [nx.diameter(comp.to_undirected()) for comp in comps]
+        if temp:
+            diameter_hist.append(mean(temp))
+        else:
+            diameter_hist.append(0)
 
         current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
         removal_propor.append(current_removal_propor)
 
     # create the barchart
-    plt.plot(removal_propor, diameter_hist)
-    plt.set_title('Attack simulation')
-    plt.set_ylabel('Diameter')
+    sns.scatterplot(x=removal_propor, y=diameter_hist)
+    # plt.set_title('Attack simulation')
+    # plt.set_ylabel('Diameter')
     path = "attack.jpg"
     plt.savefig(path)
     easygui.msgbox(f"Saved in {path}", title="Attack simulation complete")
 
 
 def fail(client, max_iters=20):
+    # TODO(11jolek11): Sns sactterplot draw on gui screen not to a file and takes "screenshot" of gui when savefig is invoked
     G_copy = copy(client.graph)
     G_size = G_copy.number_of_nodes()
 
@@ -290,21 +298,30 @@ def fail(client, max_iters=20):
         print(f"Fail iter: {current_iter}")
         current_iter += 1
 
-        node_for_removal = dcs.pop(random.randrange(len(dcs)))
+        # len(dcs )
+        if len(dcs) >= 1:
+            node_for_removal = dcs.pop(random.randrange(len(dcs)))
+        else:
+            break
+
         print(f"node_for_removal {node_for_removal}")
 
         G_copy.remove_node(node_for_removal)
 
         comps = list((G_copy.subgraph(c) for c in nx.connected_components(G_copy)))
 
-        diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
+        temp = [nx.diameter(comp.to_undirected()) for comp in comps]
+        if temp:
+            diameter_hist.append(mean(temp))
+        else:
+            diameter_hist.append(0)
 
         current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
         removal_propor.append(current_removal_propor)
 
-    plt.plot(removal_propor, diameter_hist)
-    plt.set_title('Fail simulation')
-    plt.set_ylabel('Diameter')
+    sns.scatterplot(x=removal_propor, y=diameter_hist)
+    # plt.set_title('Fail simulation')
+    # plt.set_ylabel('Diameter')
     path = "fail.jpg"
     plt.savefig(path)
     easygui.msgbox(f"Saved in {path}", title="Fail simulation complete")
@@ -369,17 +386,21 @@ def divisive(client, threshold=3, meth: str = "complete", criterion: str = "dist
     modularity_div[meth] = modularity(G_copy, [{node for node, data in G_copy.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
     print(f"Divisive: {modularity_div}")
     easygui.msgbox(f"Saved in {path}", title=f"Divisive complete. Score {modularity_div}")
+# len([nx.diameter(comp.to_undirected()) for comp in comps]) == 0
 
-def agl_methods(client, method: str):
+def agl_methods(client, method: str = "ward"):
     G_copy = copy(client.graph)
+    # FIXME(11jolek11): floyd warshall returns inf values in array
     floyd = nx.floyd_warshall_numpy(G_copy)
+    floyd[floyd == np.inf] = 999
+
     linked = linkage(floyd, method=method)
-    print(floyd)
     # Dendrogram
-    plt.figure(figsize=(10, 7))
+    # plt.figure(figsize=(10, 7))
+    fig, ax = plt.subplots()
     dendrogram(linked, orientation='top')
     path = "aglomerative.jpg"
-    plt.savefig(path)
+    fig.savefig(path)
     easygui.msgbox(f"Saved in {path}", title=f"Divisive complete")
 
 
@@ -398,16 +419,30 @@ if __name__ == "__main__":
     pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
     pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
 
-    pagerank_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
-    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
-    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
+    epidemy_box_ax = plt.axes([0.6, 0.15, 0.2, 0.05])
+    epidemy_btn = widgets.Button(epidemy_box_ax, "Epidemy simulation")
+    epidemy_btn.on_clicked(lambda _ :epidemy(client_app))
 
-    pagerank_box_ax = plt.axes([0.6, 0.15, 0.2, 0.05])
-    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
-    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
+    attack_box_ax = plt.axes([0.6, 0.1, 0.2, 0.05])
+    attack_btn = widgets.Button(attack_box_ax, "Attack simulation")
+    attack_btn.on_clicked(lambda _ :attack(client_app))
 
-    pagerank_box_ax = plt.axes([0.6, 0.1, 0.2, 0.05])
-    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
-    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
+    fail_box_ax = plt.axes([0.6, 0.05, 0.2, 0.05])
+    fail_btn = widgets.Button(fail_box_ax, "Fail simulation")
+    fail_btn.on_clicked(lambda _ :fail(client_app))
+
+    degree_distribution_box_ax = plt.axes([0.8, 0.15, 0.2, 0.05])
+    degree_distribution__btn = widgets.Button(degree_distribution_box_ax, "Visualize degree distribution")
+    degree_distribution__btn.on_clicked(lambda _ :degree_distribution(client_app))
+
+    divisive_box_ax = plt.axes([0.8, 0.1, 0.2, 0.05])
+    divisive_btn = widgets.Button(divisive_box_ax, "Modularity: Divisive method")
+    divisive_btn.on_clicked(lambda _ :divisive(client_app))
+
+    agl_methods_box_ax = plt.axes([0.8, 0.05, 0.2, 0.05])
+    agl_methods_btn = widgets.Button(agl_methods_box_ax, "Modularity: Aglomerative method")
+    agl_methods_btn.on_clicked(lambda _ :agl_methods(client_app))
 
     client_app.run()
+    sys.exit(0)
+
