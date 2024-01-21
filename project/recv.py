@@ -4,7 +4,23 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.widgets as widgets
 import matplotlib
+import seaborn as sns
+import pandas as pd
+from copy import copy
+from statistics import mean
+import random
+
+import ndlib.models.ModelConfig as mc
+import ndlib.models.epidemics as ep
+from ndlib.viz.mpl.DiffusionTrend import DiffusionTrend
+import numpy as np
+from networkx.algorithms.community import modularity
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
+from matplotlib import cm
+
+
 matplotlib.use("TkAgg")
+import easygui
 
 class ClientApp:
     def __init__(self):
@@ -43,7 +59,6 @@ class ClientApp:
 
     def fetch_graph_from_server(self):
         # Zapytanie do serwera
-        server_url = "http://127.0.0.1:5000/get"  # Aktualizuj, jeśli serwer działa na innym hoście lub porcie
         response = requests.get("http://127.0.0.1:5000/get")
 
         if response.status_code == 200:
@@ -90,6 +105,13 @@ class ClientApp:
             graph_metrics = self.calculate_graph_metrics()
             for key, text_object in self.texts.items():
                 text_object.set_text(f'{key.capitalize()}: {graph_metrics[key]}')
+
+    # def all_nodes_pagerank(self):
+    #     my_dict = nx.pagerank(self.graph)
+    #     my_frame = pd.DataFrame({"Node": list(my_dict.keys()), "Rank": list(my_dict.values())})
+    #     my_frame.index.name = "Index"
+    #     sns.displot(my_frame, x="Rank", kde=True)
+    #     # plt.savefig("pagerank.jpg")
 
 
     def calculate_graph_metrics(self):
@@ -178,6 +200,189 @@ def interval_update(app, text):
 def weight_update(app, text):
     app.weight = float(text)
 
+def all_nodes_pagerank(client):
+    graph = copy(client.graph)
+    my_dict = nx.pagerank(graph)
+    my_frame = pd.DataFrame({"Node": list(my_dict.keys()), "Rank": list(my_dict.values())})
+    my_frame.index.name = "Index"
+    sns.displot(my_frame, x="Rank", kde=True)
+    path = "pagerank.jpg"
+    plt.savefig(path)
+    easygui.msgbox(f"Saved in {path}", title="PageRank complete")
+
+def epidemy(client, model_params: dict = {
+                'beta': 0.01,
+                'lambda': 0.9,
+                'gamma': 0.005,
+                'alpha': 0.05,
+                "fraction_infected": 0.05
+            }, n: int = 500):
+
+    graph = copy(client.graph)
+
+    model = ep.SEIRModel(graph)
+
+    cfg = mc.Configuration()
+
+    for item in model_params.items():
+        cfg.add_model_parameter(item[0], item[1])
+
+    model.set_initial_status(cfg)
+    iterations = model.iteration_bunch(n)
+
+    trends = model.build_trends(iterations)
+    viz = DiffusionTrend(model, trends)
+    path = "diffusion.jpg"
+    viz.plot(path)
+    easygui.msgbox(f"Saved in {path}", title="Epidemy simulation complete")
+
+def attack(client, max_iters=20):
+    G_copy = copy(client.graph)
+    G_size = G_copy.number_of_nodes()
+
+    centr = nx.degree_centrality(G_copy)
+    dcs = pd.Series(centr)
+    dcs.sort_values(ascending=False, inplace=True)
+
+    removal_propor = []
+    diameter_hist = []
+
+    current_removal_propor = 0.0
+
+    dcs = dcs.index.values.tolist()
+
+    for i in range(len(dcs[:max_iters])):
+        G_copy.remove_node(dcs[i])
+
+        comps = list((G_copy.subgraph(c) for c in nx.connected_components(G_copy)))
+        diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
+
+        current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
+        removal_propor.append(current_removal_propor)
+
+    # create the barchart
+    plt.plot(removal_propor, diameter_hist)
+    plt.set_title('Attack simulation')
+    plt.set_ylabel('Diameter')
+    path = "attack.jpg"
+    plt.savefig(path)
+    easygui.msgbox(f"Saved in {path}", title="Attack simulation complete")
+
+
+def fail(client, max_iters=20):
+    G_copy = copy(client.graph)
+    G_size = G_copy.number_of_nodes()
+
+    centr = nx.degree_centrality(G_copy)
+    dcs = pd.Series(centr)
+    dcs.sort_values(ascending=False, inplace=True)
+
+    removal_propor = []
+    diameter_hist = []
+
+    current_removal_propor = 0.0
+
+    dcs = dcs.index.values.tolist()
+
+    current_iter = 0
+
+    while max_iters >= current_iter:
+        print(f"Fail iter: {current_iter}")
+        current_iter += 1
+
+        node_for_removal = dcs.pop(random.randrange(len(dcs)))
+        print(f"node_for_removal {node_for_removal}")
+
+        G_copy.remove_node(node_for_removal)
+
+        comps = list((G_copy.subgraph(c) for c in nx.connected_components(G_copy)))
+
+        diameter_hist.append(mean([nx.diameter(comp.to_undirected()) for comp in comps]))
+
+        current_removal_propor = 1 - (G_copy.number_of_nodes()/G_size)
+        removal_propor.append(current_removal_propor)
+
+    plt.plot(removal_propor, diameter_hist)
+    plt.set_title('Fail simulation')
+    plt.set_ylabel('Diameter')
+    path = "fail.jpg"
+    plt.savefig(path)
+    easygui.msgbox(f"Saved in {path}", title="Fail simulation complete")
+
+def degree_distribution(client):
+    G_copy = copy(client.graph)
+    degree_sequence = sorted((d for _, d in G_copy.degree()), reverse=True)
+
+    fig = plt.figure("Degree of a random graph", figsize=(6, 4))
+    # Create a gridspec for adding subplots of different sizes
+    axgrid = fig.add_gridspec(5, 4)
+
+    ax0 = fig.add_subplot(axgrid[0:3, :])
+    Gcc = G_copy.subgraph(sorted(nx.connected_components(G_copy), key=len, reverse=True)[0])
+    pos = nx.spring_layout(Gcc, seed=10396953)
+    nx.draw_networkx_nodes(Gcc, pos, ax=ax0, node_size=20)
+    nx.draw_networkx_edges(Gcc, pos, ax=ax0, alpha=0.4)
+    ax0.set_title("Connected components of self._graph_storage")
+    ax0.set_axis_off()
+
+    ax1 = fig.add_subplot(axgrid[3:, :2])
+    ax1.plot(degree_sequence, "b-", marker="o")
+    ax1.set_title("Degree Rank Plot")
+    ax1.set_ylabel("Degree")
+    ax1.set_xlabel("Rank")
+
+    ax2 = fig.add_subplot(axgrid[3:, 2:])
+    ax2.bar(*np.unique(degree_sequence, return_counts=True))
+    ax2.set_title("Degree histogram")
+    ax2.set_xlabel("Degree")
+    ax2.set_ylabel("# of Nodes")
+
+    fig.tight_layout()
+
+    path = "degree_distr.jpg"
+    plt.savefig(path)
+    easygui.msgbox(f"Saved in {path}", title="Complete")
+
+def divisive(client, threshold=3, meth: str = "complete", criterion: str = "distance"):
+    G_copy = copy(client.graph)
+    adj_matrix = nx.to_numpy_array(G_copy)
+    modularity_div = {}
+
+    divisive_clusters = linkage(adj_matrix.T, method=meth)
+    divisive_labels = fcluster(divisive_clusters, t=threshold, criterion=criterion)
+
+    for node, cluster in zip(G_copy.nodes, divisive_labels):
+        G_copy.nodes[node]['div'] = cluster
+
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 12))
+    pos = nx.kamada_kawai_layout(G_copy)
+    cmap = cm.get_cmap('hsv', max(divisive_labels))
+
+    nx.draw(G_copy, pos, node_color=[cmap(i) for i in divisive_labels], with_labels=False, ax=ax1)
+    ax1.set_title(f"Metoda podziałowa {meth}")
+
+    dendrogram(divisive_clusters, ax=ax2, no_labels=True)
+    ax2.set_title(f"Dendrogram {meth}")
+    path = "divisive.jpg"
+    plt.savefig(path)
+
+    modularity_div[meth] = modularity(G_copy, [{node for node, data in G_copy.nodes(data=True) if data['div'] == cluster} for cluster in set(divisive_labels)])
+    print(f"Divisive: {modularity_div}")
+    easygui.msgbox(f"Saved in {path}", title=f"Divisive complete. Score {modularity_div}")
+
+def agl_methods(client, method: str):
+    G_copy = copy(client.graph)
+    floyd = nx.floyd_warshall_numpy(G_copy)
+    linked = linkage(floyd, method=method)
+    print(floyd)
+    # Dendrogram
+    plt.figure(figsize=(10, 7))
+    dendrogram(linked, orientation='top')
+    path = "aglomerative.jpg"
+    plt.savefig(path)
+    easygui.msgbox(f"Saved in {path}", title=f"Divisive complete")
+
+
 if __name__ == "__main__":
     client_app = ClientApp()
 
@@ -188,5 +393,21 @@ if __name__ == "__main__":
     weight_box_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
     weight_box = widgets.TextBox(weight_box_ax, "Weight: ")
     weight_box.on_submit(lambda text: weight_update(client_app, text))
+
+    pagerank_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
+    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
+    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
+
+    pagerank_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
+    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
+    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
+
+    pagerank_box_ax = plt.axes([0.6, 0.15, 0.2, 0.05])
+    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
+    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
+
+    pagerank_box_ax = plt.axes([0.6, 0.1, 0.2, 0.05])
+    pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
+    pagerank_btn.on_clicked(lambda _ :all_nodes_pagerank(client_app))
 
     client_app.run()
