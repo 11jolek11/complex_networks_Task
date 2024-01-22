@@ -19,6 +19,7 @@ from networkx.algorithms.community import modularity
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from matplotlib import cm
 
+plt.style.use("seaborn-v0_8") # dark_background seaborn-v0_8
 
 matplotlib.use("TkAgg")
 import easygui
@@ -34,10 +35,10 @@ class ClientApp:
         self.fig, (self.ax1, self.ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
         # Ustawienia dla ax1 (graf)
-        self.ax1.set_title('Graph Animation')
+        self.ax1.set_title('')
 
         # Ustawienia dla ax2 (tekst)
-        self.ax2.set_title('Graph Metrics')
+        self.ax2.set_title('Stats')
         self.ax2.axis('off')  # Wyłączenie wyświetlania osi
 
         # Dodatkowy tekst na wykresie
@@ -66,7 +67,7 @@ class ClientApp:
             data = response.json()
             return data
         else:
-            print("Failed to fetch graph from server.")
+            print(f"Connection to server broken {response.status_code}")
             return {'nodes': [], 'edges': []}
 
     def update_graph(self, graph_data):
@@ -106,14 +107,6 @@ class ClientApp:
             graph_metrics = self.calculate_graph_metrics()
             for key, text_object in self.texts.items():
                 text_object.set_text(f'{key.capitalize()}: {graph_metrics[key]}')
-
-    # def all_nodes_pagerank(self):
-    #     my_dict = nx.pagerank(self.graph)
-    #     my_frame = pd.DataFrame({"Node": list(my_dict.keys()), "Rank": list(my_dict.values())})
-    #     my_frame.index.name = "Index"
-    #     sns.displot(my_frame, x="Rank", kde=True)
-    #     # plt.savefig("pagerank.jpg")
-
 
     def calculate_graph_metrics(self):
         # Rząd grafu (liczba wierzchołków)
@@ -191,9 +184,10 @@ class ClientApp:
         sys.exit(0)
 
 def define_text_boxes(app):
-    interval_box_ax = plt.axes([0.62, 0.30, 0.2, 0.05])
-    interval_box = widgets.TextBox(interval_box_ax, 'Interval:')
-    interval_box.on_submit(lambda text: interval_update(app, text))
+    pass
+    # interval_box_ax = plt.axes([0.62, 0.30, 0.2, 0.05])
+    # interval_box = widgets.TextBox(interval_box_ax, 'Interval:')
+    # interval_box.on_submit(lambda text: interval_update(app, text))
 
 def interval_update(app, text):
     app.ani.event_source.stop()
@@ -408,12 +402,12 @@ def agl_methods(client, method: str = "ward"):
 if __name__ == "__main__":
     client_app = ClientApp()
 
-    interval_box_ax = plt.axes([0.6, 0.30, 0.2, 0.05])
-    interval_box = widgets.TextBox(interval_box_ax, 'Interval:')
-    interval_box.on_submit(lambda text: interval_update(client_app, text))
+    # interval_box_ax = plt.axes([0.6, 0.30, 0.2, 0.05])
+    # interval_box = widgets.TextBox(interval_box_ax, 'Interval:')
+    # interval_box.on_submit(lambda text: interval_update(client_app, text))
 
     weight_box_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
-    weight_box = widgets.TextBox(weight_box_ax, "Weight: ")
+    weight_box = widgets.TextBox(weight_box_ax, "Weight filter: ")
     weight_box.on_submit(lambda text: weight_update(client_app, text))
 
     pagerank_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
