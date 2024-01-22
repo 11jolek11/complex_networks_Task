@@ -55,6 +55,7 @@ class ClientApp:
             'avg_centrality': self.ax2.text(0.1, 0.45, 'Avg Centrality: ', fontsize=10),
             'degree_correlation_coefficient': self.ax2.text(0.1, 0.4, 'Degree Correlation Coefficient: ', fontsize=10),
             'avg_closeness': self.ax2.text(0.1, 0.35, 'Avg Closeness: ', fontsize=10),
+            'transitivity': self.ax2.text(0.1, 0.3, 'Transitivity: ', fontsize=10),
         }
 
         self.weight = 0
@@ -161,6 +162,8 @@ class ClientApp:
         closeness_coefficients = nx.closeness_centrality(self.graph).values()
         avg_closeness = sum(closeness_coefficients) / order
 
+        transitivity_index = nx.transitivity(self.graph)
+
         # Zwróć obliczone parametry
         return {
             'order': order,
@@ -174,7 +177,8 @@ class ClientApp:
             'connectivity_coefficient': connectivity_coefficient,
             'avg_centrality': avg_centrality,
             'degree_correlation_coefficient': degree_correlation_coefficient,
-            'avg_closeness': avg_closeness
+            'avg_closeness': avg_closeness,
+            'transitivity': transitivity_index
         }
 
     def run(self, interval=10000):
@@ -398,6 +402,25 @@ def agl_methods(client, method: str = "ward"):
     fig.savefig(path)
     easygui.msgbox(f"Saved in {path}", title=f"Divisive complete")
 
+def triadic_census_info(client):
+    G_copy = copy(client.graph)
+    triadic_census = nx.triadic_census(G_copy)
+
+    message = ""
+
+    for key, value in triadic_census.items():
+        message += f"{key}: {value} \n"
+
+    easygui.msgbox(
+        message,
+        title="Report")
+    
+def refresh_forced(client):
+    print("REFRESH")
+    graph_data_from_server = client.fetch_graph_from_server()
+    client.update_graph(graph_data_from_server)
+
+
 
 if __name__ == "__main__":
     client_app = ClientApp()
@@ -406,9 +429,13 @@ if __name__ == "__main__":
     # interval_box = widgets.TextBox(interval_box_ax, 'Interval:')
     # interval_box.on_submit(lambda text: interval_update(client_app, text))
 
-    weight_box_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
-    weight_box = widgets.TextBox(weight_box_ax, "Weight filter: ")
-    weight_box.on_submit(lambda text: weight_update(client_app, text))
+    # weight_box_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
+    # weight_box = widgets.TextBox(weight_box_ax, "Weight filter: ")
+    # weight_box.on_submit(lambda text: weight_update(client_app, text))
+
+    refresh_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
+    refresh_btn = widgets.Button(refresh_ax, "Force refresh")
+    refresh_btn.on_clicked(lambda _: refresh_forced(client_app))
 
     pagerank_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
     pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
@@ -437,6 +464,10 @@ if __name__ == "__main__":
     agl_methods_box_ax = plt.axes([0.8, 0.05, 0.2, 0.05])
     agl_methods_btn = widgets.Button(agl_methods_box_ax, "Modularity: Aglomerative method")
     agl_methods_btn.on_clicked(lambda _ :agl_methods(client_app))
+
+    # triadic_census_info_ax = plt.axes([0.8, 0.00, 0.2, 0.05])
+    # triadic_census_info_btn = widgets.Button(triadic_census_info_ax, "Triadic Census")
+    # triadic_census_info_btn.on_clicked(lambda _ :triadic_census_info(client_app))
 
     client_app.run()
     sys.exit(0)
