@@ -37,6 +37,8 @@ class ClientApp:
         # Ustawienia dla ax1 (graf)
         self.ax1.set_title('')
 
+        self.ani = None
+
         # Ustawienia dla ax2 (tekst)
         self.ax2.set_title('Stats')
         self.ax2.axis('off')  # Wyłączenie wyświetlania osi
@@ -59,6 +61,8 @@ class ClientApp:
         }
 
         self.weight = 0
+
+        self.lock_data = False
 
         self.filter_node_closeness_centrality = 0
         self.filter_node_degree = 0
@@ -123,21 +127,22 @@ class ClientApp:
 
         # Sprawdzenie, czy struktura grafu się zmieniła
         if graph_data_from_server['nodes'] != self.node_mem:
-
             # Zapisanie nowej struktury do pamięci
-            self.node_mem = graph_data_from_server['nodes']
+            print(f"Lock state {self.lock_data}")
+            if not self.lock_data:
+                print("Inside statemanet")
+                self.node_mem = graph_data_from_server['nodes']
+                # Zaktualizuj graf
+                self.update_graph(graph_data_from_server)
 
-            # Zaktualizuj graf
-            self.update_graph(graph_data_from_server)
+                # Wyczyść ax1 i narysuj nowy graf
+                self.ax1.clear()
+                nx.draw(self.graph, with_labels=True, font_size=8, node_size=50, ax=self.ax1)
 
-            # Wyczyść ax1 i narysuj nowy graf
-            self.ax1.clear()
-            nx.draw(self.graph, with_labels=True, font_size=8, node_size=50, ax=self.ax1)
-
-            # Aktualizacja tekstu w ax2
-            graph_metrics = self.calculate_graph_metrics()
-            for key, text_object in self.texts.items():
-                text_object.set_text(f'{key.capitalize()}: {graph_metrics[key]}')
+                # Aktualizacja tekstu w ax2
+                graph_metrics = self.calculate_graph_metrics()
+                for key, text_object in self.texts.items():
+                    text_object.set_text(f'{key.capitalize()}: {graph_metrics[key]}')
 
     def calculate_graph_metrics(self):
         # Rząd grafu (liczba wierzchołków)
@@ -212,6 +217,7 @@ class ClientApp:
         }
 
     def run(self, interval=10000):
+        print("UPDATE")
         nx.draw(self.graph, with_labels=True, font_size=8, node_size=50, ax=self.ax1)
         self.ani = animation.FuncAnimation(self.fig, self.animate, interval=interval)
         plt.show()
@@ -229,6 +235,10 @@ def interval_update(app, text):
 
 def weight_update(app, text):
     app.weight = float(text)
+
+
+def filter_node_degree_update(app, text):
+    app.filter_node_degree = int(text)
 
 def all_nodes_pagerank(client):
     graph = copy(client.graph)
@@ -432,6 +442,7 @@ def agl_methods(client, method: str = "ward"):
     fig.savefig(path)
     easygui.msgbox(f"Saved in {path}", title=f"Divisive complete")
 
+# FIXME(11jolek11): networkx.exception.NetworkXNotImplemented: not implemented for undirected type
 def triadic_census_info(client):
     G_copy = copy(client.graph)
     triadic_census = nx.triadic_census(G_copy)
@@ -450,7 +461,18 @@ def refresh_forced(client):
     graph_data_from_server = client.fetch_graph_from_server()
     client.update_graph(graph_data_from_server)
 
-
+def freeze(client):
+    print(type(client.ani))
+    # if client.lock_data:
+    #     # client.ani.event_source.stop()
+    #     client.ani.pause()
+    # else:
+    #     # client.ani.event_source.start()
+    #     client.ani.resume()
+    
+    client.lock_data = not client.lock_data
+    print(f">> Data lock {client.lock_data}")
+    # client.ani.save("lol.gif")
 
 if __name__ == "__main__":
     client_app = ClientApp()
@@ -460,12 +482,21 @@ if __name__ == "__main__":
     # interval_box.on_submit(lambda text: interval_update(client_app, text))
 
     # weight_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
+    # weight_box_ax = plt.axes([0.8, 0.00, 0.2, 0.05])
     # weight_box = widgets.TextBox(weight_box_ax, "Weight filter: ")
     # weight_box.on_submit(lambda text: weight_update(client_app, text))
+
+    node_degree_box_ax = plt.axes([0.6, 0.00, 0.2, 0.05])
+    node_degree_box = widgets.TextBox(node_degree_box_ax, "Node degree filter: ")
+    node_degree_box.on_submit(lambda text: filter_node_degree_update(client_app, text))
 
     refresh_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
     refresh_btn = widgets.Button(refresh_ax, "Force refresh")
     refresh_btn.on_clicked(lambda _: refresh_forced(client_app))
+
+    freeze_ax = plt.axes([0.8, 0.25, 0.2, 0.05])
+    freeze_btn = widgets.Button(freeze_ax, "Lock updates")
+    freeze_btn.on_clicked(lambda _: freeze(client_app))
 
     pagerank_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
     pagerank_btn = widgets.Button(pagerank_box_ax, "PageRank")
