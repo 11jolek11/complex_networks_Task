@@ -523,7 +523,7 @@ if __name__ == "__main__":
     # node_degree_box.on_submit(lambda text: filter_node_degree_update(client_app, text))
 
     add_filters_ax = plt.axes([0.6, 0.00, 0.2, 0.05])
-    add_filters_btn = widgets.Button(add_filters_ax, "Force refresh")
+    add_filters_btn = widgets.Button(add_filters_ax, "Filters")
     add_filters_btn.on_clicked(lambda _: add_filters(client_app))
 
     refresh_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
