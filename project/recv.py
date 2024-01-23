@@ -60,6 +60,35 @@ class ClientApp:
 
         self.weight = 0
 
+        self.filter_node_closeness_centrality = 0
+        self.filter_node_degree = 0
+        self.filter_node_betweenes = 0
+        self.filter_node_pagerank = 0
+
+    def filter_graph(self):
+        nodes_to_remove = set([node for node in self.graph.nodes if self.graph.nodes[node].get('weight', 0) < self.weight])
+
+        degrees = {node: val for (node, val) in self.graph.degree()}
+        pagerank = nx.pagerank(self.graph)
+        betweenes = nx.betweenness_centrality(self.graph)
+        closeness_centrality = nx.closeness_centrality(self.graph)
+
+
+        a = set([node for node in self.graph.nodes if degrees[node] < self.filter_node_degree])
+        b = set([node for node in self.graph.nodes if pagerank[node] < self.filter_node_pagerank])
+        c = set([node for node in self.graph.nodes if betweenes[node] < self.filter_node_betweenes])
+        d = set([node for node in self.graph.nodes if closeness_centrality[node] < self.filter_node_closeness_centrality])
+
+        nodes_to_remove.update(a)
+        nodes_to_remove.update(b)
+        nodes_to_remove.update(c)
+        nodes_to_remove.update(d)
+
+        nodes_to_remove = list(nodes_to_remove)
+
+        return nodes_to_remove
+
+
     def fetch_graph_from_server(self):
         # Zapytanie do serwera
         response = requests.get("http://127.0.0.1:5000/get")
@@ -84,7 +113,8 @@ class ClientApp:
         self.graph.add_edges_from(graph_data['edges'])
 
         # Usunięcie wierzchołków o wadze mniejszej niż self.weight
-        nodes_to_remove = [node for node in self.graph.nodes if self.graph.nodes[node].get('weight', 0) < self.weight]
+        # nodes_to_remove = [node for node in self.graph.nodes if self.graph.nodes[node].get('weight', 0) < self.weight]
+        nodes_to_remove = self.filter_graph()
         self.graph.remove_nodes_from(nodes_to_remove)
 
     def animate(self, frame):
@@ -429,7 +459,7 @@ if __name__ == "__main__":
     # interval_box = widgets.TextBox(interval_box_ax, 'Interval:')
     # interval_box.on_submit(lambda text: interval_update(client_app, text))
 
-    # weight_box_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
+    # weight_box_ax = plt.axes([0.6, 0.20, 0.2, 0.05])
     # weight_box = widgets.TextBox(weight_box_ax, "Weight filter: ")
     # weight_box.on_submit(lambda text: weight_update(client_app, text))
 
