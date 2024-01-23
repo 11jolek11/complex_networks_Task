@@ -474,6 +474,38 @@ def freeze(client):
     print(f">> Data lock {client.lock_data}")
     # client.ani.save("lol.gif")
 
+def add_filters(client):
+    # self.weight
+    # client.filter_node_closeness_centrality = 0
+    # client.filter_node_degree = 0
+    # client.filter_node_betweenes = 0
+    # client.filter_node_pagerank = 0
+    msg = "Add filters for nodes"
+    title = "Filter"
+    fieldNames = ["Min closeness centrality","Min degree","Min betweenes","Min pagerank"]
+    temp_values = [0 for _ in fieldNames]
+
+    fieldValues = []  # we start with blanks for the values
+    fieldValues = easygui.multenterbox(msg,title, fieldNames)
+
+    while True:
+        if fieldValues is None:
+            break
+
+        for field_no in range(len(fieldNames)):
+            if fieldValues[field_no].strip() == "":
+                continue
+            
+            temp_values[field_no] = int(fieldValues[field_no])
+        break
+    
+    client.filter_node_closeness_centrality = temp_values[0]
+    client.filter_node_degree = temp_values[1]
+    client.filter_node_betweenes = temp_values[2]
+    client.filter_node_pagerank = temp_values[3]
+
+
+
 if __name__ == "__main__":
     client_app = ClientApp()
 
@@ -486,9 +518,13 @@ if __name__ == "__main__":
     # weight_box = widgets.TextBox(weight_box_ax, "Weight filter: ")
     # weight_box.on_submit(lambda text: weight_update(client_app, text))
 
-    node_degree_box_ax = plt.axes([0.6, 0.00, 0.2, 0.05])
-    node_degree_box = widgets.TextBox(node_degree_box_ax, "Node degree filter: ")
-    node_degree_box.on_submit(lambda text: filter_node_degree_update(client_app, text))
+    # node_degree_box_ax = plt.axes([0.6, 0.00, 0.2, 0.05])
+    # node_degree_box = widgets.TextBox(node_degree_box_ax, "Node degree filter: ")
+    # node_degree_box.on_submit(lambda text: filter_node_degree_update(client_app, text))
+
+    add_filters_ax = plt.axes([0.6, 0.00, 0.2, 0.05])
+    add_filters_btn = widgets.Button(add_filters_ax, "Force refresh")
+    add_filters_btn.on_clicked(lambda _: add_filters(client_app))
 
     refresh_ax = plt.axes([0.6, 0.25, 0.2, 0.05])
     refresh_btn = widgets.Button(refresh_ax, "Force refresh")
